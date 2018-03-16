@@ -23,18 +23,20 @@ class Client implements CSProcess {
       def key = selectList[i]
       requestChannel.write(key)
       def v = receiveChannel.read()
-	  if (v != key * 10) {
-		  propertyOrder = false;
+	  println "Key: " + key
+	  println "V: " + v
+	  if (v == key * 10) {
+		  propertyOrder = true;
 	  }
     }
 	
     println "Client $clientNumber has finished"
 	
 	if (propertyOrder == true) {
-		println "In Order!"
+		println "Client $clientNumber in order"
 	}
 	else {
-		println "Not in Order!"
+		println "Client $clientNumber not in order"
 	}
   }
 }
