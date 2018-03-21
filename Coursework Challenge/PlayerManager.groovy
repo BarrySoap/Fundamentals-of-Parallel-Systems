@@ -28,6 +28,8 @@ class PlayerManager implements CSProcess {
 	int minPairs = 3
 	int maxPairs = 6
 	int boardSize = 6
+	def antiFlicker = new CSTimer()
+	def flickerDelay = 2000
 	
 	void run(){
 		
@@ -110,7 +112,7 @@ class PlayerManager implements CSProcess {
 		}
 		
 		def outerAlt = new ALT([validPoint, withdrawButton])
-		def innerAlt = new ALT([nextButton, withdrawButton])
+		def innerAlt = new ALT([antiFlicker, withdrawButton])
 		def NEXT = 0
 		def VALIDPOINT = 0
 		def WITHDRAW = 1
@@ -148,10 +150,12 @@ class PlayerManager implements CSProcess {
 		}
 		else {
 			IPlabel.write("Hi " + playerName + ", you are now enroled in the PAIRS game")
-			IPconfig.write(" ")	
+			IPconfig.write(" ")
+			def timer = new CSTimer()
 						
 			// main loop
 			while (enroled) {
+				timer.sleep(flickerDelay)
 				def chosenPairs = [null, null]
 				createBoard()
 				dList.change (display, 0)
@@ -226,6 +230,7 @@ class PlayerManager implements CSProcess {
 										case NEXT:
 											//nextButton.read()
 											nextPairConfig.write(" ")
+											antiFlicker.sleep(flickerDelay)
 											def p1 = chosenPairs[0]
 											def p2 = chosenPairs[1]
 											changePairs(p1[0], p1[1], Color.LIGHT_GRAY, -1)
