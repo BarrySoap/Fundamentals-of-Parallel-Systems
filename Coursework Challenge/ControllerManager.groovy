@@ -33,7 +33,7 @@ class ControllerManager implements CSProcess{
 	int boardSize = 6
 	
 	// Turn variables
-	int turn = 0
+	int turnOrder = 0
 	def currentCards = []
 	
 	void run(){
@@ -46,6 +46,7 @@ class ControllerManager implements CSProcess{
 		int pairsRange = maxPairs - minPairs
 		
 		def availablePlayerIds = ((maxPlayers-1) .. 0).collect{it}
+		int noOfPlayers = maxPlayers - availablePlayerIds.size()
 		
 		//println "$availablePlayerIds"
 		def generatePairsNumber = { min, range ->
@@ -209,7 +210,7 @@ class ControllerManager implements CSProcess{
 					toPlayers[id].write(new GameDetails( playerDetails: playerMap,
 													 	 pairsSpecification: pairsMap,
 														 gameId: gameId,
-														 turn: turn,
+														 turn: turnOrder,
 														 currentCards: currentCards))
 				} else if ( player instanceof ClaimPair) {
 					def claimPair = (ClaimPair)player
@@ -239,7 +240,22 @@ class ControllerManager implements CSProcess{
 						}
 					}
 					// Reset the currently selected cards
-					currentCards = []
+					assert currentCards.empty
+				} else if (player == 0) {
+					turnOrder++
+					
+					if (noOfPlayers == turnOrder) {
+						turnOrder = 0
+					}
+					
+					assert currentCards.empty
+					
+				} else if (player instanceof Collection) {
+					if (currentCards.size() >= 4) {
+						currentCards = player
+					} else {
+						currentCards += player
+					}
 				} else {
 					def withdraw = (WithdrawFromGame)player
 					def id = withdraw.id
@@ -250,6 +266,14 @@ class ControllerManager implements CSProcess{
 					toPlayers[id] = null
 					availablePlayerIds << id
 					availablePlayerIds =  availablePlayerIds.sort().reverse()
+					noOfPlayers = maxPlayers - availablePlayerIds.size()
+					turnOrder++
+					
+					if (turnOrder >= noOfPlayers) {
+						turnOrder = 0
+					}
+					
+					assert currentCards.empty
 				} // end else if chain
 			} // while running
 			createBoard()
