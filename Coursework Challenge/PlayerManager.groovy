@@ -76,7 +76,7 @@ class PlayerManager implements CSProcess {
 		} // end createBoard
 		
 		def pairLocations = []
-		def colours = [Color.MAGENTA, Color.CYAN, Color.YELLOW, Color.PINK]
+		def colours = [Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN]
 		
 		def changePairs = {x, y, colour, p ->
 			def int xPos = offset[0]+(gap*x)+ (side*x)

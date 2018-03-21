@@ -89,7 +89,7 @@ class ControllerManager implements CSProcess{
 			}			
 		} // end createBoard
 		
-		def colours = [Color.MAGENTA, Color.CYAN, Color.YELLOW, Color.PINK]
+		def colours = [Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN]
 		def pairsMap =[:]
 		
 		def initPairsMap = {
