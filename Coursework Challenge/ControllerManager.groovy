@@ -32,6 +32,10 @@ class ControllerManager implements CSProcess{
 	int maxPairs = 18
 	int boardSize = 6
 	
+	// Turn variables
+	int turn = 0
+	def currentCards = []
+	
 	void run(){
 		
 		def int gap = 5
@@ -180,9 +184,9 @@ class ControllerManager implements CSProcess{
 			statusConfig.write("Running")
 			def running = (pairsUnclaimed != 0)
 			while (running){
-				def o = fromPlayers.read()
-				if ( o instanceof EnrolPlayer) {
-					def playerDetails = (EnrolPlayer)o
+				def player = fromPlayers.read()
+				if ( player instanceof EnrolPlayer) {
+					def playerDetails = (EnrolPlayer)player
 					def playerName = playerDetails.name
 					def playerToAddr = playerDetails.toPlayerChannelLocation
 					def playerToChan = NetChannel.one2net(playerToAddr)
@@ -199,14 +203,16 @@ class ControllerManager implements CSProcess{
 						// no new players can join the game
 						playerToChan.write(new EnrolDetails(id: -1))
 					}
-				} else if ( o instanceof GetGameDetails) {
-					def ggd = (GetGameDetails)o
+				} else if ( player instanceof GetGameDetails) {
+					def ggd = (GetGameDetails)player
 					def id = ggd.id
 					toPlayers[id].write(new GameDetails( playerDetails: playerMap,
 													 	 pairsSpecification: pairsMap,
-														 gameId: gameId))
-				} else if ( o instanceof ClaimPair) {
-					def claimPair = (ClaimPair)o
+														 gameId: gameId,
+														 turn: turn,
+														 currentCards: currentCards))
+				} else if ( player instanceof ClaimPair) {
+					def claimPair = (ClaimPair)player
 					def gameNo = claimPair.gameId
 					def id = claimPair.id
 					def p1 = claimPair.p1
@@ -231,9 +237,11 @@ class ControllerManager implements CSProcess{
 						else {
 							//println "cannot claim pair: $p1, $p2"
 						}
-					}	
+					}
+					// Reset the currently selected cards
+					currentCards = []
 				} else {
-					def withdraw = (WithdrawFromGame)o
+					def withdraw = (WithdrawFromGame)player
 					def id = withdraw.id
 					def playerState = playerMap.get(id)
 					println "Player: ${playerState[0]} claimed ${playerState[1]} pairs"
