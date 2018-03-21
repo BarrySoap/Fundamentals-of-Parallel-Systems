@@ -26,15 +26,13 @@ class ControllerManager implements CSProcess{
 	ChannelOutputList playerNames
 	ChannelOutputList pairsWon
 	
-	int maxPlayers = 8
+	int maxPlayers = 5
 	int side = 50
 	int minPairs = 6
 	int maxPairs = 18
 	int boardSize = 6
-	
-	// Turn variables
-	int turnOrder = 0
-	def currentCards = []
+	int currentTurn = 0
+	def cardLocs = []
 	
 	void run(){
 		
@@ -46,7 +44,6 @@ class ControllerManager implements CSProcess{
 		int pairsRange = maxPairs - minPairs
 		
 		def availablePlayerIds = ((maxPlayers-1) .. 0).collect{it}
-		int noOfPlayers = maxPlayers - availablePlayerIds.size()
 		
 		//println "$availablePlayerIds"
 		def generatePairsNumber = { min, range ->
@@ -185,9 +182,9 @@ class ControllerManager implements CSProcess{
 			statusConfig.write("Running")
 			def running = (pairsUnclaimed != 0)
 			while (running){
-				def player = fromPlayers.read()
-				if ( player instanceof EnrolPlayer) {
-					def playerDetails = (EnrolPlayer)player
+				def playerChoice = fromPlayers.read()
+				if ( playerChoice instanceof EnrolPlayer) {
+					def playerDetails = (EnrolPlayer)playerChoice
 					def playerName = playerDetails.name
 					def playerToAddr = playerDetails.toPlayerChannelLocation
 					def playerToChan = NetChannel.one2net(playerToAddr)
@@ -204,16 +201,16 @@ class ControllerManager implements CSProcess{
 						// no new players can join the game
 						playerToChan.write(new EnrolDetails(id: -1))
 					}
-				} else if ( player instanceof GetGameDetails) {
-					def ggd = (GetGameDetails)player
+				} else if ( playerChoice instanceof GetGameDetails) {
+					def ggd = (GetGameDetails)playerChoice
 					def id = ggd.id
 					toPlayers[id].write(new GameDetails( playerDetails: playerMap,
 													 	 pairsSpecification: pairsMap,
 														 gameId: gameId,
-														 turn: turnOrder,
-														 currentCards: currentCards))
-				} else if ( player instanceof ClaimPair) {
-					def claimPair = (ClaimPair)player
+														 currentTurn: currentTurn,
+														 currentCards: cardLocs))
+				} else if ( playerChoice instanceof ClaimPair) {
+					def claimPair = (ClaimPair)playerChoice
 					def gameNo = claimPair.gameId
 					def id = claimPair.id
 					def p1 = claimPair.p1
@@ -239,25 +236,29 @@ class ControllerManager implements CSProcess{
 							//println "cannot claim pair: $p1, $p2"
 						}
 					}
-					// Reset the currently selected cards
-					assert currentCards.empty
-				} else if (player == 0) {
-					turnOrder++
+					cardLocs = []	
+				} else if (playerChoice == 0) {
+					int noOfPlayers = maxPlayers - availablePlayerIds.size()
+					currentTurn++
 					
-					if (noOfPlayers == turnOrder) {
-						turnOrder = 0
+					if (noOfPlayers == currentTurn) 
+					{
+						currentTurn = 0
 					}
 					
-					assert currentCards.empty
+					cardLocs = []
 					
-				} else if (player instanceof Collection) {
-					if (currentCards.size() >= 4) {
-						currentCards = player
-					} else {
-						currentCards += player
+				} else if (playerChoice instanceof Collection ) {
+					if (cardLocs.size() >= 4)
+					{
+						cardLocs = playerChoice
+					}
+					else 
+					{
+						cardLocs += playerChoice
 					}
 				} else {
-					def withdraw = (WithdrawFromGame)player
+					def withdraw = (WithdrawFromGame)playerChoice
 					def id = withdraw.id
 					def playerState = playerMap.get(id)
 					println "Player: ${playerState[0]} claimed ${playerState[1]} pairs"
@@ -266,14 +267,16 @@ class ControllerManager implements CSProcess{
 					toPlayers[id] = null
 					availablePlayerIds << id
 					availablePlayerIds =  availablePlayerIds.sort().reverse()
-					noOfPlayers = maxPlayers - availablePlayerIds.size()
-					turnOrder++
+					int noOfPlayers = maxPlayers - availablePlayerIds.size()
 					
-					if (turnOrder >= noOfPlayers) {
-						turnOrder = 0
+					currentTurn++
+					
+					if (currentTurn >= noOfPlayers) 
+					{
+						currentTurn = 0
 					}
 					
-					assert currentCards.empty
+					cardLocs = []
 				} // end else if chain
 			} // while running
 			createBoard()
